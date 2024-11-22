@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'HomeScreen.dart';
 import 'register_screen.dart';
 import 'package:finance/Db/db_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -17,24 +19,44 @@ class _LoginScreenState extends State<LoginScreen> {
     String password = _passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kullanıcı adı ve şifre boş olamaz!')),
-      );
+      _showMessageDialog('Hata', 'Kullanıcı adı ve şifre boş olamaz!');
       return;
     }
 
     final user = await _dbHelper.login(username, password);
 
     if (user != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Giriş başarılı!')),
+      // Giriş bilgilerini kaydet
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('username', username);
+
+      // HomeScreen'e yönlendir
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(username: username),
+        ),
       );
-      // Ana ekrana yönlendirme burada yapılabilir
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Hatalı kullanıcı adı veya şifre!')),
-      );
+      _showMessageDialog('Hata', 'Hatalı kullanıcı adı veya şifre!');
     }
+  }
+
+  void _showMessageDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Tamam'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -51,7 +73,11 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(height: 20),
               Text(
                 'Hoş Geldiniz!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueGrey,
+                ),
               ),
               SizedBox(height: 20),
               TextField(
@@ -87,7 +113,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     MaterialPageRoute(builder: (context) => RegisterScreen()),
                   );
                 },
-                child: Text('Hesabınız yok mu? Kayıt Ol'),
+                child: Text(
+                  'Hesabınız yok mu? Kayıt Ol',
+                  style: TextStyle(color: Colors.blue),
+                ),
               ),
             ],
           ),
