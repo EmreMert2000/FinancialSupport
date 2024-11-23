@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'LoginScreen.dart';
+import 'ProductScreen.dart';
 
 class HomeScreen extends StatelessWidget {
   final String username; // Kullanıcı adını alacak
@@ -44,7 +45,10 @@ class HomeScreen extends StatelessWidget {
               child: ListView(
                 children: [
                   _buildMenuButton(context, 'Ürünler', Icons.bar_chart, () {
-                    // Ürünler ekranına yönlendirme
+                     Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => ProductScreen()),
+  );
                   }),
                   _buildMenuButton(context, 'Eksikler', Icons.folder, () {
                     // Eksikler ekranına yönlendirme

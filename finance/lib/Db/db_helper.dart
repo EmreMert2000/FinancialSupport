@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:finance/data/product.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -23,6 +24,7 @@ class DatabaseHelper {
   }
 
   Future _onCreate(Database db, int version) async {
+    // Kullanıcı tablosu
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,8 +32,19 @@ class DatabaseHelper {
         password TEXT NOT NULL
       )
     ''');
+
+    // Ürün tablosu
+    await db.execute('''
+      CREATE TABLE products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        price REAL NOT NULL
+      )
+    ''');
   }
 
+  // Kullanıcı işlemleri
   Future<int> insertUser(String username, String password) async {
     Database db = await instance.database;
     return await db.insert('users', {'username': username, 'password': password});
@@ -45,5 +58,33 @@ class DatabaseHelper {
       whereArgs: [username, password],
     );
     return result.isNotEmpty ? result.first : null;
+  }
+
+  // Ürün işlemleri
+  Future<int> insertProduct(Product product) async {
+    final db = await instance.database;
+    return await db.insert('products', product.toMap());
+  }
+
+  Future<List<Product>> fetchProducts() async {
+    final db = await instance.database;
+    final maps = await db.query('products');
+
+    return maps.map((map) => Product(
+      id: map['id'] as int?,
+      name: map['name'] as String,
+      quantity: map['quantity'] as int,
+      price: map['price'] as double,
+    )).toList();
+  }
+
+  Future<int> deleteProduct(int id) async {
+    final db = await instance.database;
+    return await db.delete('products', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> clearProducts() async {
+    final db = await instance.database;
+    await db.delete('products');
   }
 }
