@@ -19,30 +19,28 @@ class ProductScreen extends StatelessWidget {
                 Expanded(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: SingleChildScrollView(
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('ID')),
-                          DataColumn(label: Text('Ürün Adı')),
-                          DataColumn(label: Text('Adet')),
-                          DataColumn(label: Text('Fiyat')),
-                          DataColumn(label: Text('İşlemler')),
-                        ],
-                        rows: viewModel.products.map((product) {
-                          return DataRow(cells: [
-                            DataCell(Text(product.id.toString())),
-                            DataCell(Text(product.name)),
-                            DataCell(Text(product.quantity.toString())),
-                            DataCell(Text('${product.price.toStringAsFixed(2)} ₺')),
-                            DataCell(
-                              IconButton(
-                                icon: Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => viewModel.deleteProduct(product.id!),
-                              ),
+                    child: DataTable(
+                      columns: const [
+                        DataColumn(label: Text('ID')),
+                        DataColumn(label: Text('Ürün Adı')),
+                        DataColumn(label: Text('Adet')),
+                        DataColumn(label: Text('Fiyat')),
+                        DataColumn(label: Text('İşlemler')),
+                      ],
+                      rows: viewModel.products.map((product) {
+                        return DataRow(cells: [
+                          DataCell(Text(product.id?.toString() ?? 'N/A')),  // Null kontrolü
+                          DataCell(Text(product.name)),
+                          DataCell(Text(product.quantity.toString())),
+                          DataCell(Text('${product.price.toStringAsFixed(2)} ₺')),
+                          DataCell(
+                            IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => viewModel.deleteProduct(product.id!),
                             ),
-                          ]);
-                        }).toList(),
-                      ),
+                          ),
+                        ]);
+                      }).toList(),
                     ),
                   ),
                 ),
@@ -68,49 +66,59 @@ class ProductScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Yeni Ürün Ekle'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(labelText: 'Ürün Adı'),
+      builder: (dialogContext) {
+        // Provider erişimini doğru bağlamdan yapıyoruz
+        final viewModel = Provider.of<ProductViewModel>(context, listen: false);
+
+        return AlertDialog(
+          title: Text('Yeni Ürün Ekle'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(labelText: 'Ürün Adı'),
+              ),
+              TextField(
+                controller: _quantityController,
+                decoration: InputDecoration(labelText: 'Adet'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: _priceController,
+                decoration: InputDecoration(labelText: 'Fiyat'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text('İptal'),
             ),
-            TextField(
-              controller: _quantityController,
-              decoration: InputDecoration(labelText: 'Adet'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: _priceController,
-              decoration: InputDecoration(labelText: 'Fiyat'),
-              keyboardType: TextInputType.number,
+            TextButton(
+              onPressed: () {
+                final name = _nameController.text.trim();
+                final quantity = int.tryParse(_quantityController.text.trim()) ?? 0;
+                final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
+
+                if (name.isNotEmpty && quantity > 0 && price > 0) {
+                  viewModel.addProduct(
+                    Product(name: name, quantity: quantity, price: price),
+                  );
+                  Navigator.pop(dialogContext);
+                } else {
+                  // Kullanıcıya hata mesajı göster
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(content: Text('Lütfen geçerli değerler girin')),
+                  );
+                }
+              },
+              child: Text('Ekle'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('İptal'),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = _nameController.text.trim();
-              final quantity = int.tryParse(_quantityController.text.trim()) ?? 0;
-              final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
-
-              if (name.isNotEmpty && quantity > 0 && price > 0) {
-                Provider.of<ProductViewModel>(context, listen: false).addProduct(
-                  Product(name: name, quantity: quantity, price: price),
-                );
-                Navigator.pop(context);
-              }
-            },
-            child: Text('Ekle'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

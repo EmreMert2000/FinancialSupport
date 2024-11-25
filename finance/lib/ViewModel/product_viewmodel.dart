@@ -6,22 +6,48 @@ class ProductViewModel extends ChangeNotifier {
   List<Product> _products = [];
   List<Product> get products => _products;
 
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  String? errorMessage;
+  final DatabaseHelper _dbHelper;
 
+  // Yapıcı metod ile bağımlılık enjeksiyonu
+  ProductViewModel({DatabaseHelper? dbHelper}) : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+
+  // Veritabanından ürünleri çekme
   Future<void> fetchProducts() async {
-    _products = await _dbHelper.fetchProducts();
-    notifyListeners();
+    try {
+      _products = await _dbHelper.fetchProducts();
+      print('Fetched products: $_products'); // Debugging purpose
+      notifyListeners();
+    } catch (e) {
+      errorMessage = 'Error fetching products: $e';
+      print('Error fetching products: $e');
+      notifyListeners(); // Error mesajı UI'da görünsün
+    }
   }
 
+  // Ürün ekleme
   Future<void> addProduct(Product product) async {
-    await _dbHelper.insertProduct(product);
-    await fetchProducts();
+    try {
+      await _dbHelper.insertProduct(product);
+      _products.add(product); // Yeni ürünü listeye ekle
+      notifyListeners(); // Listeyi güncelle
+    } catch (e) {
+      errorMessage = 'Error adding product: $e';
+      print('Error adding product: $e');
+      notifyListeners(); // Error mesajı UI'da görünsün
+    }
   }
 
+  // Ürün silme
   Future<void> deleteProduct(int id) async {
-    await _dbHelper.deleteProduct(id);
-    await fetchProducts();
+    try {
+      await _dbHelper.deleteProduct(id);
+      _products.removeWhere((product) => product.id == id); // Silinen ürünü listeden çıkar
+      notifyListeners(); // Listeyi güncelle
+    } catch (e) {
+      errorMessage = 'Error deleting product: $e';
+      print('Error deleting product: $e');
+      notifyListeners(); // Error mesajı UI'da görünsün
+    }
   }
-
- 
 }

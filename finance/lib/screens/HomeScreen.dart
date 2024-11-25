@@ -1,25 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'LoginScreen.dart';
 import 'ProductScreen.dart';
+import 'missing_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  final String username; // Kullanıcı adını alacak
-
-  HomeScreen({required this.username});
-
-  Future<void> _logout(BuildContext context) async {
-    // Oturum bilgisini temizle
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
-    // Giriş ekranına yönlendir
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-    );
-  }
-
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,7 +17,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hoş Geldin, $username!',
+              'Hoş Geldin, Nizam Yapi!',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -51,7 +35,10 @@ class HomeScreen extends StatelessWidget {
   );
                   }),
                   _buildMenuButton(context, 'Eksikler', Icons.folder, () {
-                    // Eksikler ekranına yönlendirme
+                    Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => MissingListScreen()),
+  );
                   }),
                   _buildMenuButton(context, 'İrsaliyelerim', Icons.file_copy,
                       () {
@@ -61,12 +48,8 @@ class HomeScreen extends StatelessWidget {
                       context, 'Muhasebe Hesabım', Icons.account_balance, () {
                     // Muhasebe Hesabım ekranına yönlendirme
                   }),
-                  _buildMenuButton(context, 'Ayarlar', Icons.settings, () {
-                    // Ayarlar ekranına yönlendirme
-                  }),
-                  _buildMenuButton(context, 'Çıkış Yap', Icons.logout, () {
-                    _logout(context);
-                  }),
+              
+                
                 ],
               ),
             ),
