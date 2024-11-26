@@ -2,6 +2,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:finance/data/product.dart';
 import 'package:finance/data/missing_item.dart';
+import 'package:finance/data/invoice_item.dart';
+import 'package:finance/data/invoice.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -52,6 +54,27 @@ class DatabaseHelper {
         name TEXT NOT NULL
       )
     ''');
+
+
+    // İrsaliye Tablosu
+    await db.execute('''
+      CREATE TABLE invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        date TEXT NOT NULL
+      )
+    ''');
+ await db.execute('''
+      CREATE TABLE invoice_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoiceId INTEGER NOT NULL,
+        description TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        price REAL NOT NULL,
+        FOREIGN KEY(invoiceId) REFERENCES invoices(id)
+      )
+    ''');
+
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -155,5 +178,57 @@ class DatabaseHelper {
     return await db.delete('missing_items', where: 'id = ?', whereArgs: [id]);
   }
 
+  // CRUD operations for invoices
+  Future<int> insertInvoice(Invoice invoice) async {
+    final db = await database;
+    return await db.insert('invoices', invoice.toMap());
+  }
+
+  Future<List<Invoice>> fetchInvoices() async {
+    final db = await database;
+    final maps = await db.query('invoices');
+    return List.generate(
+      maps.length,
+      (i) => Invoice.fromMap(maps[i]),
+    );
+  }
+
+  Future<int> updateInvoice(Invoice invoice) async {
+    final db = await database;
+    return await db.update(
+      'invoices',
+      invoice.toMap(),
+      where: 'id = ?',
+      whereArgs: [invoice.id],
+    );
+  }
+
+  Future<int> deleteInvoice(int id) async {
+    final db = await database;
+    return await db.delete(
+      'invoices',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // CRUD operations for invoice items
+  Future<int> insertInvoiceItem(InvoiceItem item) async {
+    final db = await database;
+    return await db.insert('invoice_items', item.toMap());
+  }
+
+  Future<List<InvoiceItem>> fetchInvoiceItems(int invoiceId) async {
+    final db = await database;
+    final maps = await db.query(
+      'invoice_items',
+      where: 'invoiceId = ?',
+      whereArgs: [invoiceId],
+    );
+    return List.generate(
+      maps.length,
+      (i) => InvoiceItem.fromMap(maps[i]),
+    );
+  }
   
 }

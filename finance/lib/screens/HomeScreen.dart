@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'ProductScreen.dart';
 import 'missing_list_screen.dart';
+import 'invoice_screen.dart';
 
 class HomeScreen extends StatelessWidget {
  
@@ -42,7 +43,10 @@ class HomeScreen extends StatelessWidget {
                   }),
                   _buildMenuButton(context, 'İrsaliyelerim', Icons.file_copy,
                       () {
-                    // İrsaliyelerim ekranına yönlendirme
+                    Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => InvoiceScreen()),
+  );
                   }),
                   _buildMenuButton(
                       context, 'Muhasebe Hesabım', Icons.account_balance, () {
