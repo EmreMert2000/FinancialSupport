@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:finance/data/invoice.dart';
-import 'package:finance/data/invoice_item.dart';
+
 import 'package:finance/data/missing_item.dart';
 import 'package:finance/data/product.dart';
 
@@ -145,35 +145,36 @@ class DatabaseHelper {
   }
 
   // İrsaliye işlemleri
+ // İrsaliye ve ürünleri birlikte al
+  Future<List<Invoice>> fetchInvoicesWithItems() async {
+    final db = await database;
+
+    // İlk olarak tüm invoices'ı alalım
+    final List<Map<String, dynamic>> invoiceMaps = await db.query('invoices');
+    List<Invoice> invoices = invoiceMaps.map((map) => Invoice.fromMap(map)).toList();
+
+    // Her invoice için ilgili invoice_items'ı alalım
+    for (var invoice in invoices) {
+      final List<Map<String, dynamic>> itemMaps = await db.query(
+        'invoice_items',
+        where: 'invoiceId = ?',
+        whereArgs: [invoice.id],
+      );
+      invoice.items = itemMaps.map((map) => InvoiceItem.fromMap(map)).toList();
+    }
+
+    return invoices;
+  }
+
+  // İrsaliye eklemek
   Future<int> insertInvoice(Invoice invoice) async {
     final db = await database;
     return await db.insert('invoices', invoice.toMap());
   }
 
-  Future<List<Invoice>> fetchInvoices() async {
-    final db = await database;
-    final maps = await db.query('invoices');
-    return maps.map((map) => Invoice.fromMap(map)).toList();
-  }
-
+  // İrsaliye silmek
   Future<int> deleteInvoice(int id) async {
     final db = await database;
     return await db.delete('invoices', where: 'id = ?', whereArgs: [id]);
-  }
-
-  // İrsaliye öğeleri işlemleri
-  Future<int> insertInvoiceItem(InvoiceItem item) async {
-    final db = await database;
-    return await db.insert('invoice_items', item.toMap());
-  }
-
-  Future<List<InvoiceItem>> fetchInvoiceItems(int invoiceId) async {
-    final db = await database;
-    final maps = await db.query(
-      'invoice_items',
-      where: 'invoiceId = ?',
-      whereArgs: [invoiceId],
-    );
-    return maps.map((map) => InvoiceItem.fromMap(map)).toList();
   }
 }

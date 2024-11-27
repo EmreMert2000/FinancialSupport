@@ -15,24 +15,32 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   final _dateController = TextEditingController();
   final _productNameController = TextEditingController();
   final _productQuantityController = TextEditingController();
+  final _productPriceController = TextEditingController(); // Fiyat için controller
 
   final InvoiceViewModel _viewModel = InvoiceViewModel();
   final List<Map<String, dynamic>> _products = [];
 
+  // Add a product to the list
   void _addProduct() {
     final name = _productNameController.text.trim();
     final quantity = _productQuantityController.text.trim();
+    final price = _productPriceController.text.trim();
 
-    if (name.isNotEmpty && quantity.isNotEmpty) {
+    if (name.isNotEmpty && quantity.isNotEmpty && price.isNotEmpty) {
       setState(() {
-        _products.add({'name': name, 'quantity': int.parse(quantity)});
+        _products.add({
+          'name': name,
+          'quantity': int.parse(quantity),
+          'price': double.parse(price) // Fiyat bilgisini ekledik
+        });
       });
       _productNameController.clear();
       _productQuantityController.clear();
+      _productPriceController.clear(); // Fiyat controller'ını da temizliyoruz
     }
   }
 
-  
+  // Generate PDF document
   Future<void> _generatePdf() async {
     final pdf = pw.Document();
 
@@ -47,7 +55,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               pw.SizedBox(height: 20),
               pw.Text('Ürünler:', style: pw.TextStyle(fontSize: 18)),
               ..._products.map((product) {
-                return pw.Text('${product['name']} - Adet: ${product['quantity']}');
+                return pw.Text('${product['name']} - Adet: ${product['quantity']} - Fiyat: ${product['price']}₺');
               }).toList(),
             ],
           );
@@ -55,8 +63,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       ),
     );
 
-   
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+    await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => pdf.save());
   }
 
   @override
@@ -97,6 +105,14 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       decoration: InputDecoration(labelText: 'Adet'),
                     ),
                   ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _productPriceController, // Fiyat alanı
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: 'Fiyat'),
+                    ),
+                  ),
                   IconButton(
                     icon: Icon(Icons.add, color: Colors.green),
                     onPressed: _addProduct,
@@ -112,7 +128,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   final product = _products[index];
                   return ListTile(
                     title: Text(product['name']),
-                    subtitle: Text('Adet: ${product['quantity']}'),
+                    subtitle: Text('Adet: ${product['quantity']} - Fiyat: ${product['price']}₺'),
                     trailing: IconButton(
                       icon: Icon(Icons.delete, color: Colors.red),
                       onPressed: () {
@@ -131,15 +147,42 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                   final date = _dateController.text.trim();
 
                   if (title.isNotEmpty && date.isNotEmpty) {
-                    await _viewModel.addInvoice(
-                      Invoice(
+                    try {
+                      // Create invoice object with products
+                      final invoice = Invoice(
                         title: title,
                         date: date,
-                        products: _products,
-                      ),
+                        items: _products.map((p) => InvoiceItem(
+                          invoiceId: p['id'], // Bu alanı da eklemeyi unutmayın
+                          description: p['name'], // Ürün adını description olarak kullanabiliriz
+                          quantity: p['quantity'],
+                          price: p['price'], // Fiyat bilgisini burada ekliyoruz
+                        )).toList(),
+                      );
+
+                      // Add invoice using the ViewModel
+                      await _viewModel.addInvoice(invoice);
+
+                      // Generate PDF document
+                      await _generatePdf();
+
+                      // Navigate back to the previous screen
+                      Navigator.pop(context);
+
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('İrsaliye başarıyla oluşturuldu!')),
+                      );
+                    } catch (e) {
+                      // Handle errors
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Hata: ${e.toString()}')),
+                      );
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Lütfen tüm alanları doldurun')),
                     );
-                    Navigator.pop(context); 
-                    await _generatePdf(); 
                   }
                 },
                 child: Text('İrsaliye Oluştur'),
