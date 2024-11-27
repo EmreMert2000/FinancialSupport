@@ -4,7 +4,6 @@ import 'missing_list_screen.dart';
 import 'invoice_screen.dart';
 
 class HomeScreen extends StatelessWidget {
- 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,30 +29,31 @@ class HomeScreen extends StatelessWidget {
               child: ListView(
                 children: [
                   _buildMenuButton(context, 'Ürünler', Icons.bar_chart, () {
-                     Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => ProductScreen()),
-  );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ProductScreen()),
+                    );
                   }),
                   _buildMenuButton(context, 'Eksikler', Icons.folder, () {
                     Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => MissingListScreen()),
-  );
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => MissingListScreen()),
+                    );
                   }),
                   _buildMenuButton(context, 'İrsaliyelerim', Icons.file_copy,
                       () {
                     Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => InvoiceScreen()),
-  );
+                      context,
+                      MaterialPageRoute(builder: (context) => InvoiceScreen()),
+                    );
                   }),
                   _buildMenuButton(
                       context, 'Muhasebe Hesabım', Icons.account_balance, () {
                     // Muhasebe Hesabım ekranına yönlendirme
                   }),
-              
-                
+                  _buildMenuButton(
+                      context, 'Ayarlar', Icons.account_balance, () {}),
                 ],
               ),
             ),

@@ -1,9 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:finance/data/product.dart';
-import 'package:finance/data/missing_item.dart';
-import 'package:finance/data/invoice_item.dart';
 import 'package:finance/data/invoice.dart';
+import 'package:finance/data/invoice_item.dart';
+import 'package:finance/data/missing_item.dart';
+import 'package:finance/data/product.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -21,7 +21,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'financial_support.db');
     return await openDatabase(
       path,
-      version: 3, // Veritabanı sürümünü 3 olarak belirleyin
+      version: 1,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -55,8 +55,7 @@ class DatabaseHelper {
       )
     ''');
 
-
-    // İrsaliye Tablosu
+    // İrsaliye tablosu
     await db.execute('''
       CREATE TABLE invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +63,9 @@ class DatabaseHelper {
         date TEXT NOT NULL
       )
     ''');
- await db.execute('''
+
+    // İrsaliye öğeleri tablosu
+    await db.execute('''
       CREATE TABLE invoice_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         invoiceId INTEGER NOT NULL,
@@ -75,86 +76,55 @@ class DatabaseHelper {
       )
     ''');
 
+    // Muhasebe tablosu
+    await db.execute('''
+      CREATE TABLE transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        companyName TEXT NOT NULL,
+        debt REAL NOT NULL,
+        credit REAL NOT NULL,
+        date TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Eksik öğeler tablosunu ekle
       await db.execute('''
-        CREATE TABLE missing_items (
+        CREATE TABLE transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL
+          companyName TEXT NOT NULL,
+          debt REAL NOT NULL,
+          credit REAL NOT NULL,
+          date TEXT NOT NULL
         )
       ''');
     }
-    if (oldVersion < 3) {
-      // Eğer versiyon 3'e yükseltiyorsanız, 'products' tablosu zaten 'onCreate' içinde oluşturulmuş olmalı
-      // Burada herhangi bir işlem yapmanıza gerek yok
-    }
+    // Diğer versiyon yükseltmeleri eklenebilir.
   }
 
-  // Kullanıcı işlemleri
-  Future<int> insertUser(String username, String password) async {
-    Database db = await instance.database;
-    return await db.insert('users', {'username': username, 'password': password});
-  }
-
-  Future<Map<String, dynamic>?> login(String username, String password) async {
-    Database db = await instance.database;
-    final result = await db.query(
-      'users',
-      where: 'username = ? AND password = ?',
-      whereArgs: [username, password],
-    );
-    return result.isNotEmpty ? result.first : null;
-  }
+  // CRUD İşlemleri
 
   // Ürün işlemleri
   Future<int> insertProduct(Product product) async {
     final db = await instance.database;
-    try {
-      return await db.insert('products', product.toMap());
-    } catch (e) {
-      print("Product insertion error: $e");
-      return -1; // Hata durumunda negatif bir değer döner
-    }
+    return await db.insert('products', product.toMap());
   }
 
   Future<List<Product>> fetchProducts() async {
     final db = await instance.database;
-    try {
-      final maps = await db.query('products');
-      return maps.map((map) {
-        return Product(
-          id: map['id'] as int?,
-          name: map['name'] as String,
-          quantity: map['quantity'] as int,
-          price: map['price'] is int ? (map['price'] as int).toDouble() : map['price'] as double,
-        );
-      }).toList();
-    } catch (e) {
-      print("Error fetching products: $e");
-      return [];
-    }
+    final maps = await db.query('products');
+    return maps.map((map) => Product.fromMap(map)).toList();
   }
 
   Future<int> deleteProduct(int id) async {
     final db = await instance.database;
-    try {
-      return await db.delete('products', where: 'id = ?', whereArgs: [id]);
-    } catch (e) {
-      print("Product deletion error: $e");
-      return -1;
-    }
+    return await db.delete('products', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> clearProducts() async {
     final db = await instance.database;
-    try {
-      await db.delete('products');
-    } catch (e) {
-      print("Error clearing products: $e");
-    }
+    await db.delete('products');
   }
 
   // Eksik öğeler işlemleri
@@ -165,12 +135,8 @@ class DatabaseHelper {
 
   Future<List<MissingItem>> fetchMissingItems() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('missing_items');
-
-    return List.generate(
-      maps.length,
-      (i) => MissingItem(id: maps[i]['id'], name: maps[i]['name']),
-    );
+    final maps = await db.query('missing_items');
+    return maps.map((map) => MissingItem.fromMap(map)).toList();
   }
 
   Future<int> deleteMissingItem(int id) async {
@@ -178,7 +144,7 @@ class DatabaseHelper {
     return await db.delete('missing_items', where: 'id = ?', whereArgs: [id]);
   }
 
-  // CRUD operations for invoices
+  // İrsaliye işlemleri
   Future<int> insertInvoice(Invoice invoice) async {
     final db = await database;
     return await db.insert('invoices', invoice.toMap());
@@ -187,32 +153,15 @@ class DatabaseHelper {
   Future<List<Invoice>> fetchInvoices() async {
     final db = await database;
     final maps = await db.query('invoices');
-    return List.generate(
-      maps.length,
-      (i) => Invoice.fromMap(maps[i]),
-    );
-  }
-
-  Future<int> updateInvoice(Invoice invoice) async {
-    final db = await database;
-    return await db.update(
-      'invoices',
-      invoice.toMap(),
-      where: 'id = ?',
-      whereArgs: [invoice.id],
-    );
+    return maps.map((map) => Invoice.fromMap(map)).toList();
   }
 
   Future<int> deleteInvoice(int id) async {
     final db = await database;
-    return await db.delete(
-      'invoices',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('invoices', where: 'id = ?', whereArgs: [id]);
   }
 
-  // CRUD operations for invoice items
+  // İrsaliye öğeleri işlemleri
   Future<int> insertInvoiceItem(InvoiceItem item) async {
     final db = await database;
     return await db.insert('invoice_items', item.toMap());
@@ -225,10 +174,6 @@ class DatabaseHelper {
       where: 'invoiceId = ?',
       whereArgs: [invoiceId],
     );
-    return List.generate(
-      maps.length,
-      (i) => InvoiceItem.fromMap(maps[i]),
-    );
+    return maps.map((map) => InvoiceItem.fromMap(map)).toList();
   }
-  
 }
