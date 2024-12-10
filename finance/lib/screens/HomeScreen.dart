@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'ProductScreen.dart';
 import 'missing_list_screen.dart';
-import 'invoice_screen.dart';
+import 'package:finance/screens/InvoiceScreen.dart';
+
 
 class HomeScreen extends StatelessWidget {
   @override
