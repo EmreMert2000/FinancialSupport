@@ -1,30 +1,38 @@
-import 'package:flutter/material.dart';
-import 'package:finance/data/invoiceModel.dart';
 import 'package:finance/Db/invoiceDb.dart';
 
-class InvoiceViewModel extends ChangeNotifier {
-  final DatabaseHelper _dbHelper = DatabaseHelper();
-  List<Product> _products = [];
+import '../data/invoiceModel.dart';
 
-  List<Product> get products => _products;
+class InvoiceViewModel {
+  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
-  Future<void> loadProducts() async {
-    _products = await _dbHelper.fetchProducts();
-    notifyListeners();
+  Future<int> createInvoice(Invoice invoice, List<InvoiceItem> items) async {
+    final db = await _databaseHelper.database;
+
+    final invoiceId = await db.insert('invoices', invoice.toMap());
+    for (var item in items) {
+      await db.insert(
+          'invoiceItems', item.copyWith(invoiceId: invoiceId).toMap());
+    }
+
+    return invoiceId;
   }
 
-  Future<void> addProduct(Product product) async {
-    await _dbHelper.insertProduct(product);
-    await loadProducts();
+  Future<List<Invoice>> getInvoices() async {
+    final db = await _databaseHelper.database;
+    final result = await db.query('invoices', orderBy: 'createdAt DESC');
+
+    return result.map((map) => Invoice.fromMap(map)).toList();
   }
 
-  Future<void> deleteProduct(int id) async {
-    await _dbHelper.deleteProduct(id);
-    await loadProducts();
-  }
+  Future<List<InvoiceItem>> getInvoiceItems(int invoiceId) async {
+    final db = await _databaseHelper.database;
+    final result = await db
+        .query('invoiceItems', where: 'invoiceId = ?', whereArgs: [invoiceId]);
 
-  Future<void> updateProduct(int id, Product product) async {
-    await _dbHelper.updateProduct(id, product);
-    await loadProducts();
+    return result.map((map) => InvoiceItem.fromMap(map)).toList();
   }
+}
+
+extension on InvoiceItem {
+  copyWith({required int invoiceId}) {}
 }

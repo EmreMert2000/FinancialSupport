@@ -1,8 +1,7 @@
+import 'package:finance/screens/InvoiceScreen.dart';
 import 'package:flutter/material.dart';
 import 'ProductScreen.dart';
 import 'missing_list_screen.dart';
-import 'package:finance/screens/InvoiceScreen.dart';
-
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -46,7 +45,8 @@ class HomeScreen extends StatelessWidget {
                       () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => InvoiceScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => InvoiceCreateScreen()),
                     );
                   }),
                   _buildMenuButton(

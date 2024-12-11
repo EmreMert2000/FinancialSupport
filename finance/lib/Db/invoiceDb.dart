@@ -1,67 +1,48 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:finance/data/invoiceModel.dart';
 
 class DatabaseHelper {
-  static final DatabaseHelper _instance = DatabaseHelper._internal();
+  static final DatabaseHelper instance = DatabaseHelper._init();
+
   static Database? _database;
 
-  factory DatabaseHelper() => _instance;
-
-  DatabaseHelper._internal();
+  DatabaseHelper._init();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database = await _initDB('invoice.db');
     return _database!;
   }
 
-  Future<Database> _initDatabase() async {
+  Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
-    return openDatabase(
-      join(dbPath, 'products.db'),
-      onCreate: (db, version) {
-        return db.execute(
-          '''
-          CREATE TABLE products(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            quantity INTEGER,
-            price REAL
-          )
-          ''',
-        );
-      },
+    final path = join(dbPath, filePath);
+
+    return await openDatabase(
+      path,
       version: 1,
+      onCreate: _createDB,
     );
   }
 
-  Future<int> insertProduct(Product product) async {
-    final db = await database;
-    return await db.insert('products', product.toMap());
-  }
-
-  Future<List<Product>> fetchProducts() async {
-    final db = await database;
-    final maps = await db.query('products');
-
-    return List.generate(maps.length, (i) {
-      return Product.fromMap(maps[i]);
-    });
-  }
-
-  Future<int> deleteProduct(int id) async {
-    final db = await database;
-    return await db.delete('products', where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<int> updateProduct(int id, Product product) async {
-    final db = await database;
-    return await db.update(
-      'products',
-      product.toMap(),
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+  Future _createDB(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        companyName TEXT NOT NULL,
+        totalPrice REAL NOT NULL,
+        createdAt TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE invoiceItems (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoiceId INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        price REAL NOT NULL,
+        FOREIGN KEY (invoiceId) REFERENCES invoices (id)
+      )
+    ''');
   }
 }

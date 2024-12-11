@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:finance/ViewModel/invoiceViewModel.dart';
-import 'package:finance/data/invoiceModel.dart';
+import 'package:flutter/material.dart';
+
+import '../data/invoiceModel.dart';
 
 class InvoiceCreateScreen extends StatefulWidget {
   @override
@@ -9,77 +10,84 @@ class InvoiceCreateScreen extends StatefulWidget {
 
 class _InvoiceCreateScreenState extends State<InvoiceCreateScreen> {
   final InvoiceViewModel _viewModel = InvoiceViewModel();
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _quantityController = TextEditingController();
-  final _priceController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _viewModel.loadProducts();
+  final TextEditingController _companyController = TextEditingController();
+  final List<InvoiceItem> _items = [];
+
+  void _addItem() {
+    setState(() {
+      _items.add(InvoiceItem(invoiceId: 0, name: '', quantity: 1, price: 0.0));
+    });
+  }
+
+  Future<void> _createInvoice(BuildContext context) async {
+    if (_companyController.text.isEmpty || _items.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Tüm alanları doldurun.')));
+      return;
+    }
+
+    final invoice = Invoice(
+      companyName: _companyController.text,
+      totalPrice:
+          _items.fold(0, (sum, item) => sum + (item.quantity * item.price)),
+      createdAt: DateTime.now(),
+    );
+
+    await _viewModel.createInvoice(invoice, _items);
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('İrsaliye oluşturuldu.')));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Invoice Creator')),
-      body: Column(
-        children: [
-          Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(labelText: 'Product Name'),
-                ),
-                TextFormField(
-                  controller: _quantityController,
-                  decoration: InputDecoration(labelText: 'Quantity'),
-                  keyboardType: TextInputType.number,
-                ),
-                TextFormField(
-                  controller: _priceController,
-                  decoration: InputDecoration(labelText: 'Price'),
-                  keyboardType: TextInputType.number,
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final product = Product(
-                      name: _nameController.text,
-                      quantity: int.parse(_quantityController.text),
-                      price: double.parse(_priceController.text),
-                    );
-                    _viewModel.addProduct(product);
-                  },
-                  child: Text('Add Product'),
-                ),
-              ],
+      appBar: AppBar(title: Text('İrsaliye Oluştur')),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: _companyController,
+              decoration: InputDecoration(labelText: 'Firma İsmi'),
             ),
-          ),
-          Expanded(
-            child: ValueListenableBuilder(
-              valueListenable: _viewModel,
-              builder: (context, value, child) {
-                return ListView.builder(
-                  itemCount: _viewModel.products.length,
-                  itemBuilder: (context, index) {
-                    final product = _viewModel.products[index];
-                    return ListTile(
-                      title: Text(product.name),
-                      subtitle: Text('Quantity: ${product.quantity}, Price: ${product.price}'),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => _viewModel.deleteProduct(product.id!),
-                      ),
-                    );
-                  },
-                );
-              },
+            ElevatedButton(
+              onPressed: _addItem,
+              child: Text('Ürün Ekle'),
             ),
-          ),
-        ],
+            ..._items.map((item) {
+              return Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(labelText: 'Ürün Adı'),
+                      onChanged: (value) => setState(() => item.name = value),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(labelText: 'Adet'),
+                      onChanged: (value) => setState(
+                          () => item.quantity = int.tryParse(value) ?? 1),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(labelText: 'Fiyat'),
+                      onChanged: (value) => setState(
+                          () => item.price = double.tryParse(value) ?? 0.0),
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+            ElevatedButton(
+              onPressed: () => _createInvoice(context),
+              child: Text('İrsaliye Oluştur'),
+            ),
+          ],
+        ),
       ),
     );
   }
