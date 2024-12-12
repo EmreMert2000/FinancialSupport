@@ -46,7 +46,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => InvoiceCreateScreen()),
+                          builder: (context) => InvoiceListScreen()),
                     );
                   }),
                   _buildMenuButton(

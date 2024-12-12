@@ -1,38 +1,29 @@
 import 'package:finance/Db/invoiceDb.dart';
 
+import '../data/InvoiceFile.Dart';
 import '../data/invoiceModel.dart';
 
 class InvoiceViewModel {
-  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
   Future<int> createInvoice(Invoice invoice, List<InvoiceItem> items) async {
-    final db = await _databaseHelper.database;
-
-    final invoiceId = await db.insert('invoices', invoice.toMap());
+    final invoiceId = await _dbHelper.insertInvoice(invoice);
     for (var item in items) {
-      await db.insert(
-          'invoiceItems', item.copyWith(invoiceId: invoiceId).toMap());
+      item.invoiceId = invoiceId;
+      await _dbHelper.insertInvoiceItem(item);
     }
-
     return invoiceId;
   }
 
-  Future<List<Invoice>> getInvoices() async {
-    final db = await _databaseHelper.database;
-    final result = await db.query('invoices', orderBy: 'createdAt DESC');
-
-    return result.map((map) => Invoice.fromMap(map)).toList();
+  Future<List<Invoice>> getInvoices() {
+    return _dbHelper.getInvoices();
   }
 
-  Future<List<InvoiceItem>> getInvoiceItems(int invoiceId) async {
-    final db = await _databaseHelper.database;
-    final result = await db
-        .query('invoiceItems', where: 'invoiceId = ?', whereArgs: [invoiceId]);
-
-    return result.map((map) => InvoiceItem.fromMap(map)).toList();
+  Future<List<InvoiceItem>> getInvoiceItems(int invoiceId) {
+    return _dbHelper.getInvoiceItems(invoiceId);
   }
-}
 
-extension on InvoiceItem {
-  copyWith({required int invoiceId}) {}
+  Future<int> deleteInvoice(int id) {
+    return _dbHelper.deleteInvoice(id);
+  }
 }
