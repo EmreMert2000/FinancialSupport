@@ -148,28 +148,120 @@ class _InvoiceCreateScreenState extends State<InvoiceCreateScreen> {
 
     pdf.addPage(
       pw.Page(
-        build: (pw.Context context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text('Fatura', style: pw.TextStyle(fontSize: 24)),
-            pw.SizedBox(height: 16),
-            pw.Text('Firma: ${invoice['company']}'),
-            pw.Text('Tarih: ${invoice['createdAt']}'),
-            pw.Text('Toplam Fiyat: ${invoice['totalPrice']} TL'),
-            pw.SizedBox(height: 16),
-            pw.Text('Ürünler:',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-            pw.ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                return pw.Text(
-                  '${item['name']} - ${item['quantity']} adet - ${item['price']} TL',
-                );
-              },
-            ),
-          ],
-        ),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Nizam Yapi Malzemeleri',
+                style: pw.TextStyle(
+                  fontSize: 28,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Malzeme alan Firma: ${invoice['company']}',
+                style: pw.TextStyle(fontSize: 18),
+              ),
+              pw.SizedBox(height: 20),
+
+              // Ürün Tablosu
+              pw.Table(
+                border: pw.TableBorder.all(),
+                columnWidths: {
+                  0: pw.FlexColumnWidth(2),
+                  1: pw.FlexColumnWidth(1),
+                  2: pw.FlexColumnWidth(1),
+                  3: pw.FlexColumnWidth(1),
+                },
+                children: [
+                  pw.TableRow(
+                    decoration:
+                        pw.BoxDecoration(color: PdfColor.fromInt(0xffe0e0e0)),
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text(
+                          'Ürün Adi',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text(
+                          'Adet',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text(
+                          'Birim Fiyat',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text(
+                          'Toplam Fiyat',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ...items.map<pw.TableRow>((item) {
+                    final totalPrice =
+                        (item['quantity'] as int) * (item['price'] as double);
+                    return pw.TableRow(children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text(item['name'] as String),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text(item['quantity'].toString()),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text('${item['price']} TL'),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8.0),
+                        child: pw.Text('${totalPrice.toStringAsFixed(2)} TL'),
+                      ),
+                    ]);
+                  }).toList(),
+                ],
+              ),
+
+              pw.SizedBox(height: 20),
+              // Toplam Fiyat ve KDV Bilgisi
+              pw.Align(
+                alignment: pw.Alignment.centerRight,
+                child: pw.Text(
+                  'Genel Toplam: ${invoice['totalPrice']} TL',
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 5),
+              pw.Align(
+                alignment: pw.Alignment.centerRight,
+                child: pw.Text(
+                  '(KDV Dahildir)',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontStyle: pw.FontStyle.italic,
+                    color: PdfColor.fromInt(0xff7b7b7b),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
 

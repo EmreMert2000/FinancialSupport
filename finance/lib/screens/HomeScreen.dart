@@ -1,4 +1,5 @@
 import 'package:finance/screens/InvoiceScreen.dart';
+import 'package:finance/screens/TransactionScreen.dart';
 import 'package:flutter/material.dart';
 import 'ProductScreen.dart';
 import 'missing_list_screen.dart';
@@ -51,7 +52,11 @@ class HomeScreen extends StatelessWidget {
                   }),
                   _buildMenuButton(
                       context, 'Muhasebe Hesabım', Icons.account_balance, () {
-                    // Muhasebe Hesabım ekranına yönlendirme
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => TransactionScreen()),
+                    );
                   }),
                   _buildMenuButton(
                       context, 'Ayarlar', Icons.account_balance, () {}),

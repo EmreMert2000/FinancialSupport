@@ -1,35 +1,18 @@
-class Transaction {
-  final int id;
-  final String companyName;
-  final double debt;
-  final double credit;
-  final String date;
+class MyTransaction {
+  final String title;
+  final double amount;
+  final DateTime date;
+  final TransactionType type;
 
-  Transaction({
-    required this.id,
-    required this.companyName,
-    required this.debt,
-    required this.credit,
+  MyTransaction({
+    required this.title,
+    required this.amount,
     required this.date,
+    required this.type,
   });
+}
 
-  factory Transaction.fromMap(Map<String, dynamic> map) {
-    return Transaction(
-      id: map['id'],
-      companyName: map['companyName'],
-      debt: map['debt'],
-      credit: map['credit'],
-      date: map['date'],
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'companyName': companyName,
-      'debt': debt,
-      'credit': credit,
-      'date': date,
-    };
-  }
+enum TransactionType {
+  income,
+  expense,
 }
