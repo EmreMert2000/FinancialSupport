@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 import 'package:finance/screens/HomeScreen.dart';
 
 void main() {
@@ -18,5 +17,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-

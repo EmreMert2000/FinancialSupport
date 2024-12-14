@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class InvoiceCreateScreen extends StatefulWidget {
   @override
@@ -13,7 +16,7 @@ class _InvoiceCreateScreenState extends State<InvoiceCreateScreen> {
   final _searchController = TextEditingController();
   List<Map<String, dynamic>> _items = [];
   List<Map<String, dynamic>> _invoices = [];
-  List<Map<String, dynamic>> _filteredInvoices = []; // Yeni liste eklendi
+  List<Map<String, dynamic>> _filteredInvoices = [];
   bool _isProductSectionVisible = false;
   Database? _db;
 
@@ -21,12 +24,12 @@ class _InvoiceCreateScreenState extends State<InvoiceCreateScreen> {
   void initState() {
     super.initState();
     _initDatabase();
-    _searchController.addListener(_filterInvoices); // Arama listener'ı eklendi
+    _searchController.addListener(_filterInvoices);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_filterInvoices); // Dinleyiciyi temizle
+    _searchController.removeListener(_filterInvoices);
     super.dispose();
   }
 
@@ -66,17 +69,16 @@ class _InvoiceCreateScreenState extends State<InvoiceCreateScreen> {
     final result = await _db!.query('invoices');
     setState(() {
       _invoices = result;
-      _filteredInvoices = result; // Başlangıçta tüm faturalar gösterilsin
+      _filteredInvoices = result;
     });
   }
 
-  // Arama filtreleme fonksiyonu
   void _filterInvoices() {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredInvoices = _invoices.where((invoice) {
         final company = invoice['company'].toLowerCase();
-        return company.contains(query); // Firma ismini arama
+        return company.contains(query);
       }).toList();
     });
   }
@@ -132,8 +134,46 @@ class _InvoiceCreateScreenState extends State<InvoiceCreateScreen> {
   Future<void> _deleteInvoice(int id) async {
     await _db!.delete('items', where: 'invoiceId = ?', whereArgs: [id]);
     await _db!.delete('invoices', where: 'id = ?', whereArgs: [id]);
-
     _loadInvoices();
+  }
+
+  Future<void> _generatePdf(Map<String, dynamic> invoice) async {
+    final pdf = pw.Document();
+
+    final items = await _db!.query(
+      'items',
+      where: 'invoiceId = ?',
+      whereArgs: [invoice['id']],
+    );
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('Fatura', style: pw.TextStyle(fontSize: 24)),
+            pw.SizedBox(height: 16),
+            pw.Text('Firma: ${invoice['company']}'),
+            pw.Text('Tarih: ${invoice['createdAt']}'),
+            pw.Text('Toplam Fiyat: ${invoice['totalPrice']} TL'),
+            pw.SizedBox(height: 16),
+            pw.Text('Ürünler:',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            pw.ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return pw.Text(
+                  '${item['name']} - ${item['quantity']} adet - ${item['price']} TL',
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await Printing.layoutPdf(onLayout: (format) => pdf.save());
   }
 
   @override
@@ -260,17 +300,25 @@ class _InvoiceCreateScreenState extends State<InvoiceCreateScreen> {
             ListView.builder(
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
-              itemCount:
-                  _filteredInvoices.length, // Filtrelenmiş listeyi kullan
+              itemCount: _filteredInvoices.length,
               itemBuilder: (context, index) {
                 final invoice = _filteredInvoices[index];
                 return Card(
                   child: ListTile(
                     title: Text(invoice['company']),
                     subtitle: Text('Toplam: ${invoice['totalPrice']} TL'),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () => _deleteInvoice(invoice['id']),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.picture_as_pdf),
+                          onPressed: () => _generatePdf(invoice),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => _deleteInvoice(invoice['id']),
+                        ),
+                      ],
                     ),
                   ),
                 );
