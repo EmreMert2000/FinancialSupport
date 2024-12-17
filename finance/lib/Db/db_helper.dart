@@ -120,6 +120,17 @@ class DatabaseHelper {
     return await db.delete('products', where: 'id = ?', whereArgs: [id]);
   }
 
+  // Ürün güncelleme
+  Future<void> updateProduct(Product updatedProduct) async {
+    final db = await database;
+    await db.update(
+      'products',
+      updatedProduct.toMap(),
+      where: 'id = ?',
+      whereArgs: [updatedProduct.id],
+    );
+  }
+
   Future<void> clearProducts() async {
     final db = await instance.database;
     await db.delete('products');
@@ -141,6 +152,4 @@ class DatabaseHelper {
     final db = await database;
     return await db.delete('missing_items', where: 'id = ?', whereArgs: [id]);
   }
-
- 
 }

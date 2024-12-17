@@ -10,7 +10,8 @@ class ProductViewModel extends ChangeNotifier {
   final DatabaseHelper _dbHelper;
 
   // Yapıcı metod ile bağımlılık enjeksiyonu
-  ProductViewModel({DatabaseHelper? dbHelper}) : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+  ProductViewModel({DatabaseHelper? dbHelper})
+      : _dbHelper = dbHelper ?? DatabaseHelper.instance;
 
   // Veritabanından ürünleri çekme
   Future<void> fetchProducts() async {
@@ -42,11 +43,31 @@ class ProductViewModel extends ChangeNotifier {
   Future<void> deleteProduct(int id) async {
     try {
       await _dbHelper.deleteProduct(id);
-      _products.removeWhere((product) => product.id == id); // Silinen ürünü listeden çıkar
+      _products.removeWhere(
+          (product) => product.id == id); // Silinen ürünü listeden çıkar
       notifyListeners(); // Listeyi güncelle
     } catch (e) {
       errorMessage = 'Error deleting product: $e';
       print('Error deleting product: $e');
+      notifyListeners(); // Error mesajı UI'da görünsün
+    }
+  }
+
+  // Ürün güncelleme
+  Future<void> editProduct(Product updatedProduct) async {
+    try {
+      await _dbHelper
+          .updateProduct(updatedProduct); // Ürünü veritabanında güncelle
+      // Listede güncellenmiş ürünü bul ve yenisiyle değiştir
+      int index =
+          _products.indexWhere((product) => product.id == updatedProduct.id);
+      if (index != -1) {
+        _products[index] = updatedProduct;
+      }
+      notifyListeners(); // Listeyi güncelle
+    } catch (e) {
+      errorMessage = 'Error updating product: $e';
+      print('Error updating product: $e');
       notifyListeners(); // Error mesajı UI'da görünsün
     }
   }

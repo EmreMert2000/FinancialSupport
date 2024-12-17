@@ -29,14 +29,28 @@ class ProductScreen extends StatelessWidget {
                       ],
                       rows: viewModel.products.map((product) {
                         return DataRow(cells: [
-                          DataCell(Text(product.id?.toString() ?? 'N/A')),  // Null kontrolü
+                          DataCell(Text(product.id?.toString() ?? 'N/A')),
                           DataCell(Text(product.name)),
                           DataCell(Text(product.quantity.toString())),
-                          DataCell(Text('${product.price.toStringAsFixed(2)} ₺')),
                           DataCell(
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => viewModel.deleteProduct(product.id!),
+                              Text('${product.price.toStringAsFixed(2)} ₺')),
+                          DataCell(
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit, color: Colors.red),
+                                  onPressed: () {
+                                    // Düzenleme için ürün verileri ile dialog aç
+                                    _showEditProductDialog(
+                                        context, product, viewModel);
+                                  },
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () =>
+                                      viewModel.deleteProduct(product.id!),
+                                ),
+                              ],
                             ),
                           ),
                         ]);
@@ -59,6 +73,7 @@ class ProductScreen extends StatelessWidget {
     );
   }
 
+  // Ürün ekleme dialogu
   void _showAddProductDialog(BuildContext context) {
     final _nameController = TextEditingController();
     final _quantityController = TextEditingController();
@@ -67,7 +82,6 @@ class ProductScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        // Provider erişimini doğru bağlamdan yapıyoruz
         final viewModel = Provider.of<ProductViewModel>(context, listen: false);
 
         return AlertDialog(
@@ -99,8 +113,10 @@ class ProductScreen extends StatelessWidget {
             TextButton(
               onPressed: () {
                 final name = _nameController.text.trim();
-                final quantity = int.tryParse(_quantityController.text.trim()) ?? 0;
-                final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
+                final quantity =
+                    int.tryParse(_quantityController.text.trim()) ?? 0;
+                final price =
+                    double.tryParse(_priceController.text.trim()) ?? 0.0;
 
                 if (name.isNotEmpty && quantity > 0 && price > 0) {
                   viewModel.addProduct(
@@ -108,13 +124,81 @@ class ProductScreen extends StatelessWidget {
                   );
                   Navigator.pop(dialogContext);
                 } else {
-                  // Kullanıcıya hata mesajı göster
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(content: Text('Lütfen geçerli değerler girin')),
                   );
                 }
               },
               child: Text('Ekle'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Ürün düzenleme dialogu
+  void _showEditProductDialog(
+      BuildContext context, Product product, ProductViewModel viewModel) {
+    final _nameController = TextEditingController(text: product.name);
+    final _quantityController =
+        TextEditingController(text: product.quantity.toString());
+    final _priceController =
+        TextEditingController(text: product.price.toString());
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text('Ürünü Düzenle'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(labelText: 'Ürün Adı'),
+              ),
+              TextField(
+                controller: _quantityController,
+                decoration: InputDecoration(labelText: 'Adet'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: _priceController,
+                decoration: InputDecoration(labelText: 'Fiyat'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text('İptal'),
+            ),
+            TextButton(
+              onPressed: () {
+                final name = _nameController.text.trim();
+                final quantity =
+                    int.tryParse(_quantityController.text.trim()) ?? 0;
+                final price =
+                    double.tryParse(_priceController.text.trim()) ?? 0.0;
+
+                if (name.isNotEmpty && quantity > 0 && price > 0) {
+                  final updatedProduct = Product(
+                    id: product.id, // Güncelleme için mevcut ürünün id'si
+                    name: name,
+                    quantity: quantity,
+                    price: price,
+                  );
+                  viewModel.editProduct(updatedProduct); // Veriyi güncelle
+                  Navigator.pop(dialogContext); // Dialogu kapat
+                } else {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(content: Text('Lütfen geçerli değerler girin')),
+                  );
+                }
+              },
+              child: Text('Güncelle'),
             ),
           ],
         );

@@ -1,8 +1,9 @@
 import 'package:finance/screens/InvoiceScreen.dart';
-import 'package:finance/screens/TransactionScreen.dart';
+
 import 'package:flutter/material.dart';
 import 'ProductScreen.dart';
 import 'missing_list_screen.dart';
+import 'package:finance/screens/CompanyScreen.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -54,8 +55,7 @@ class HomeScreen extends StatelessWidget {
                       context, 'Muhasebe Hesabım', Icons.account_balance, () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (context) => TransactionScreen()),
+                      MaterialPageRoute(builder: (context) => CompanyScreen()),
                     );
                   }),
                   _buildMenuButton(
