@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../ViewModel/company_viewmodel.dart';
 import '../data/company.dart';
 
@@ -12,15 +13,13 @@ class _CompanyScreenState extends State<CompanyScreen> {
   List<Company> companies = [];
   List<Company> filteredCompanies = [];
 
-  // TextEditingController tanımlamaları
   final TextEditingController _companyNameController = TextEditingController();
   final TextEditingController _debtController = TextEditingController();
   final TextEditingController _creditController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _dateController =
-      TextEditingController(); // Date controller
+  final TextEditingController _dateController = TextEditingController();
 
-  DateTime _selectedDate = DateTime.now(); // Default to current date
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -175,8 +174,10 @@ class _CompanyScreenState extends State<CompanyScreen> {
                   child: ListTile(
                     title: Text(company.name),
                     subtitle: Text(
-                        "Borç: ${company.debt} TL\nAlacak: ${company.credit} TL\nTarih: ${company.date.toLocal()}"
-                            .split(' ')[0]),
+                      "Borç: ${company.debt.toStringAsFixed(2)} TL\n"
+                      "Alacak: ${company.credit.toStringAsFixed(2)} TL\n"
+                      "Tarih: ${company.date != null ? DateFormat('dd/MM/yyyy').format(company.date!) : 'Seçilmedi'}",
+                    ),
                     trailing: IconButton(
                       icon: Icon(Icons.delete, color: Colors.red),
                       onPressed: () => _deleteCompany(company.id!),
