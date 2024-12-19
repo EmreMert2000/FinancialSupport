@@ -3,7 +3,8 @@ import 'package:finance/data/product.dart';
 import 'package:finance/Db/db_helper.dart';
 
 class ProductViewModel extends ChangeNotifier {
-  List<Product> _products = [];
+  List<Product> _allProducts = []; // Tüm ürünler burada saklanır
+  List<Product> _products = []; // Filtrelenmiş ürünler burada saklanır
   List<Product> get products => _products;
 
   String? errorMessage;
@@ -16,13 +17,12 @@ class ProductViewModel extends ChangeNotifier {
   // Veritabanından ürünleri çekme
   Future<void> fetchProducts() async {
     try {
-      _products = await _dbHelper.fetchProducts();
-      print('Fetched products: $_products'); // Debugging purpose
+      _allProducts = await _dbHelper.fetchProducts();
+      _products = List.from(_allProducts); // Başlangıçta tüm ürünleri göster
       notifyListeners();
     } catch (e) {
       errorMessage = 'Error fetching products: $e';
-      print('Error fetching products: $e');
-      notifyListeners(); // Error mesajı UI'da görünsün
+      notifyListeners();
     }
   }
 
@@ -30,12 +30,12 @@ class ProductViewModel extends ChangeNotifier {
   Future<void> addProduct(Product product) async {
     try {
       await _dbHelper.insertProduct(product);
-      _products.add(product); // Yeni ürünü listeye ekle
-      notifyListeners(); // Listeyi güncelle
+      _allProducts.add(product); // Yeni ürünü tüm listeye ekle
+      _products.add(product); // Filtrelenmiş listeyi de güncelle
+      notifyListeners();
     } catch (e) {
       errorMessage = 'Error adding product: $e';
-      print('Error adding product: $e');
-      notifyListeners(); // Error mesajı UI'da görünsün
+      notifyListeners();
     }
   }
 
@@ -43,32 +43,46 @@ class ProductViewModel extends ChangeNotifier {
   Future<void> deleteProduct(int id) async {
     try {
       await _dbHelper.deleteProduct(id);
-      _products.removeWhere(
-          (product) => product.id == id); // Silinen ürünü listeden çıkar
-      notifyListeners(); // Listeyi güncelle
+      _allProducts.removeWhere((product) => product.id == id);
+      _products.removeWhere((product) => product.id == id);
+      notifyListeners();
     } catch (e) {
       errorMessage = 'Error deleting product: $e';
-      print('Error deleting product: $e');
-      notifyListeners(); // Error mesajı UI'da görünsün
+      notifyListeners();
     }
   }
 
   // Ürün güncelleme
   Future<void> editProduct(Product updatedProduct) async {
     try {
-      await _dbHelper
-          .updateProduct(updatedProduct); // Ürünü veritabanında güncelle
-      // Listede güncellenmiş ürünü bul ve yenisiyle değiştir
+      await _dbHelper.updateProduct(updatedProduct);
       int index =
-          _products.indexWhere((product) => product.id == updatedProduct.id);
+          _allProducts.indexWhere((product) => product.id == updatedProduct.id);
       if (index != -1) {
-        _products[index] = updatedProduct;
+        _allProducts[index] = updatedProduct;
       }
-      notifyListeners(); // Listeyi güncelle
+      int filteredIndex =
+          _products.indexWhere((product) => product.id == updatedProduct.id);
+      if (filteredIndex != -1) {
+        _products[filteredIndex] = updatedProduct;
+      }
+      notifyListeners();
     } catch (e) {
       errorMessage = 'Error updating product: $e';
-      print('Error updating product: $e');
-      notifyListeners(); // Error mesajı UI'da görünsün
+      notifyListeners();
     }
+  }
+
+  // Ürünleri filtreleme (arama algoritması)
+  void filterProducts(String query) {
+    if (query.isEmpty) {
+      _products = List.from(_allProducts); // Arama boşsa tüm ürünleri göster
+    } else {
+      _products = _allProducts
+          .where((product) =>
+              product.name.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    }
+    notifyListeners();
   }
 }
